@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人财务管理系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login/Setup Screen -->
+        <div id="auth-screen" class="screen active">
+            <div class="auth-container">
+                <h1>个人财务管理系统</h1>
+                <div id="auth-content">
+                    <div id="setup-form" class="auth-form">
+                        <h2>首次设置</h2>
+                        <p>请创建密码以保护您的财务数据</p>
+                        <input type="password" id="setup-password" placeholder="输入密码" class="form-input">
+                        <input type="password" id="setup-password-confirm" placeholder="确认密码" class="form-input">
+                        <button onclick="app.setupPassword()" class="btn btn-primary">创建账户</button>
+                    </div>
+                    <div id="login-form" class="auth-form" style="display: none;">
+                        <h2>登录</h2>
+                        <input type="password" id="login-password" placeholder="输入密码" class="form-input">
+                        <button onclick="app.login()" class="btn btn-primary">登录</button>
+                        <button onclick="app.resetData()" class="btn btn-secondary">重置数据</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application Screen -->
+        <div id="main-screen" class="screen">
+            <nav class="navbar">
+                <div class="nav-brand">财务管理</div>
+                <div class="nav-menu">
+                    <button onclick="app.showView('dashboard')" class="nav-item">仪表盘</button>
+                    <button onclick="app.showView('transactions')" class="nav-item">交易记录</button>
+                    <button onclick="app.showView('accounts')" class="nav-item">账户</button>
+                    <button onclick="app.showView('categories')" class="nav-item">分类</button>
+                    <button onclick="app.showView('reports')" class="nav-item">报表</button>
+                    <button onclick="app.showView('import')" class="nav-item">导入</button>
+                    <button onclick="app.logout()" class="nav-item logout">退出</button>
+                </div>
+            </nav>
+
+            <main class="main-content">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view active">
+                    <h2>财务概览</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>总余额</h3>
+                            <p class="stat-value" id="total-balance">¥0.00</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>本月收入</h3>
+                            <p class="stat-value income" id="month-income">¥0.00</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>本月支出</h3>
+                            <p class="stat-value expense" id="month-expense">¥0.00</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>本月净值</h3>
+                            <p class="stat-value" id="month-net">¥0.00</p>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>最近交易</h3>
+                            <div id="recent-transactions"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>分类支出统计</h3>
+                            <div id="category-chart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions View -->
+                <div id="transactions-view" class="view">
+                    <div class="view-header">
+                        <h2>交易记录</h2>
+                        <button onclick="app.showTransactionModal()" class="btn btn-primary">添加交易</button>
+                    </div>
+                    <div class="filters">
+                        <input type="text" id="search-transaction" placeholder="搜索交易..." class="form-input">
+                        <select id="filter-type" class="form-select" onchange="app.filterTransactions()">
+                            <option value="all">全部</option>
+                            <option value="income">收入</option>
+                            <option value="expense">支出</option>
+                            <option value="transfer">转账</option>
+                        </select>
+                        <select id="filter-account" class="form-select" onchange="app.filterTransactions()">
+                            <option value="all">所有账户</option>
+                        </select>
+                    </div>
+                    <div id="transactions-list"></div>
+                </div>
+
+                <!-- Accounts View -->
+                <div id="accounts-view" class="view">
+                    <div class="view-header">
+                        <h2>账户管理</h2>
+                        <button onclick="app.showAccountModal()" class="btn btn-primary">添加账户</button>
+                    </div>
+                    <div id="accounts-list"></div>
+                </div>
+
+                <!-- Categories View -->
+                <div id="categories-view" class="view">
+                    <div class="view-header">
+                        <h2>分类管理</h2>
+                        <button onclick="app.showCategoryModal()" class="btn btn-primary">添加分类</button>
+                    </div>
+                    <div id="categories-list"></div>
+                </div>
+
+                <!-- Reports View -->
+                <div id="reports-view" class="view">
+                    <h2>财务报表</h2>
+                    <div class="report-controls">
+                        <input type="month" id="report-month" class="form-input" onchange="app.generateReport()">
+                        <button onclick="app.generateReport()" class="btn btn-primary">生成报表</button>
+                        <button onclick="app.exportData()" class="btn btn-secondary">导出数据</button>
+                    </div>
+                    <div id="report-content"></div>
+                </div>
+
+                <!-- Import View -->
+                <div id="import-view" class="view">
+                    <h2>导入银行账单</h2>
+                    <div class="import-container">
+                        <div class="file-upload">
+                            <input type="file" id="csv-file" accept=".csv" onchange="app.handleFileUpload(event)">
+                            <label for="csv-file" class="upload-label">选择CSV文件</label>
+                        </div>
+                        <div class="import-instructions">
+                            <h3>CSV格式说明</h3>
+                            <p>支持以下列（按顺序）：</p>
+                            <ul>
+                                <li>日期 (YYYY-MM-DD 或 YYYY/MM/DD)</li>
+                                <li>描述/备注</li>
+                                <li>金额（正数为收入，负数为支出）</li>
+                                <li>分类（可选）</li>
+                            </ul>
+                        </div>
+                        <div id="import-preview"></div>
+                        <button id="confirm-import" onclick="app.confirmImport()" class="btn btn-primary" style="display: none;">确认导入</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Transaction Modal -->
+        <div id="transaction-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="transaction-modal-title">添加交易</h3>
+                    <button onclick="app.closeModal('transaction-modal')" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="transaction-id">
+                    <div class="form-group">
+                        <label>类型</label>
+                        <select id="transaction-type" class="form-select" onchange="app.updateTransactionForm()">
+                            <option value="expense">支出</option>
+                            <option value="income">收入</option>
+                            <option value="transfer">转账</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input type="date" id="transaction-date" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>账户</label>
+                        <select id="transaction-account" class="form-select"></select>
+                    </div>
+                    <div class="form-group" id="to-account-group" style="display: none;">
+                        <label>转入账户</label>
+                        <select id="transaction-to-account" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>金额</label>
+                        <input type="number" id="transaction-amount" class="form-input" step="0.01" min="0">
+                    </div>
+                    <div class="form-group" id="category-group">
+                        <label>分类</label>
+                        <select id="transaction-category" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <input type="text" id="transaction-note" class="form-input">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="app.closeModal('transaction-modal')" class="btn btn-secondary">取消</button>
+                    <button onclick="app.saveTransaction()" class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Modal -->
+        <div id="account-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加账户</h3>
+                    <button onclick="app.closeModal('account-modal')" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="account-id">
+                    <div class="form-group">
+                        <label>账户名称</label>
+                        <input type="text" id="account-name" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>账户类型</label>
+                        <select id="account-type" class="form-select">
+                            <option value="cash">现金</option>
+                            <option value="bank">银行卡</option>
+                            <option value="credit">信用卡</option>
+                            <option value="investment">投资账户</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>初始余额</label>
+                        <input type="number" id="account-balance" class="form-input" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="app.closeModal('account-modal')" class="btn btn-secondary">取消</button>
+                    <button onclick="app.saveAccount()" class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Modal -->
+        <div id="category-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加分类</h3>
+                    <button onclick="app.closeModal('category-modal')" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="category-id">
+                    <div class="form-group">
+                        <label>分类名称</label>
+                        <input type="text" id="category-name" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>分类类型</label>
+                        <select id="category-type" class="form-select">
+                            <option value="expense">支出</option>
+                            <option value="income">收入</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>颜色</label>
+                        <input type="color" id="category-color" class="form-input">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="app.closeModal('category-modal')" class="btn btn-secondary">取消</button>
+                    <button onclick="app.saveCategory()" class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
